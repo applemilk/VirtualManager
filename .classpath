@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="/usr/java/jdk1.8.0_181/lib/libvirt.jar"/>
+	<classpathentry kind="lib" path="/usr/java/jdk1.8.0_181/lib/jna-5.5.0.jar"/>
+	<classpathentry kind="lib" path="/root/ganymed-ssh2-build210/ganymed-ssh2-build210.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
