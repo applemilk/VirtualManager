@@ -1,22 +1,22 @@
 package Manager;
 import org.libvirt.*;
 import java.util.*;
-import java.awt.*;
+//import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+import javax.swing.table.*;
 
 import ch.ethz.ssh2.Session;
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.StreamGobbler;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 
-import java.text.SimpleDateFormat;
+//import java.text.SimpleDateFormat;
 public class Manager {
 	public static String DEFAULTCHARTSET = "UTF-8";
 	public static Map<String, String> account = new HashMap<String, String>();
@@ -28,49 +28,66 @@ public class Manager {
 	public static final JTextField sourceId = new JTextField(15);
 	public static final JTextField targetId = new JTextField(15);
 	public static final JTextField domainId = new JTextField(15);
+	public static JPanel panel = new JPanel(null);
+	public static JTable table = null;
 	public static JLabel result = new JLabel();
 	public static JLabel migrateResult = new JLabel();
 	public static void main(String[] args) {
 		addAccount();
 		createPage();
-		getHostInfo();
     }
 	
 	static private void createPage() {
 		JFrame jf = new JFrame("Virtual Machine Manager");
-        jf.setSize(800, 800);
+        jf.setSize(700, 600);
         jf.setLocationRelativeTo(null);
         jf.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-
-        JPanel panel = new JPanel();
-        textArea.setLineWrap(false);                       // 自动换行
         
-        JButton btn = new JButton("commit");
-        JButton migrateBtn = new JButton("migrate");
+        textArea.setLineWrap(false); 
         JLabel hostId = new JLabel("host id");
+        JButton btn = new JButton("commit");
         JLabel targrtLabel = new JLabel("target id");
-        JLabel migrateId = new JLabel("domain name");
+        JLabel migrateId = new JLabel("domain id");
+        JButton migrateBtn = new JButton("migrate");
+        JButton getHostBtn = new JButton("开启监控");
+        hostId.setBounds(20, 10, 100, 30);
+        sourceId.setBounds(100, 10, 180, 30);
+        btn.setBounds(300, 10, 100, 30);
+        result.setBounds(20, 50, 270, 30);
+        targrtLabel.setBounds(20, 50, 80, 30);
+        targetId.setBounds(100, 50, 180, 30);
+        migrateId.setBounds(20, 90, 80, 30);
+        domainId.setBounds(100, 90, 180, 30);
+        migrateBtn.setBounds(300, 90, 100, 30);
+        migrateResult.setBounds(20, 130, 100, 30);
+        getHostBtn.setBounds(20, 180, 100, 30);
+        
         panel.add(hostId);
         panel.add(sourceId);
+        panel.add(btn);
+        panel.add(targrtLabel);
         try{
         	localConnect(btn);
         	migrateBtn(migrateBtn);
+        	getHostBtn.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                	getHostInfo();
+                }
+            });
       	} catch (LibvirtException e) {
           	System.out.println("exception caught:"+e);
           	System.out.println(e.getError());
       	}
-        panel.add(btn);
-        panel.add(targrtLabel);
         panel.add(targetId);
         panel.add(migrateId);
         panel.add(domainId);
         panel.add(migrateBtn);
-        panel.add(result);
-        panel.add(textArea);
+        panel.add(getHostBtn);
+        //panel.add(result);
         panel.add(migrateResult);
 
         jf.setContentPane(panel);
-        //jf.setContentPane(scrollPane);
         jf.setVisible(true);
 	}
 	
@@ -80,6 +97,10 @@ public class Manager {
             @Override
             public void actionPerformed(ActionEvent e) {
             	try{
+            		Object[] columnNames = {"虚拟机id", "名称", "状态", "内存利用率", "cpu利用率"};
+            		Object[][] rowData = new Object[20][];
+            		int i=0;
+            		
             		textArea.setText("");
             		conn = new Connect("qemu+tcp://"+sourceId.getText()+"/system");
             		result.setText("connect succuss! ");
@@ -90,14 +111,19 @@ public class Manager {
                     textArea.append("running virtual machine: " + idsOfDomain.length + "\n");
             		for (int id : idsOfDomain) {
                         Domain domain = conn.domainLookupByID(id);
-                        textArea.append("虚拟机的id:"+ domain.getID() + "\n"); 
-                        textArea.append("虚拟机的uuid:"+ domain.getUUIDString() + "\n");
-                        textArea.append("虚拟机的名称:"+ domain.getName() + "\n");
-                        textArea.append("虚拟机的状态:"+ domain.getInfo().state + "\n");
-                        textArea.append("虚拟机的memory usage:"+ getDomainMem(domain.getID())+ "%\n");
-                        //cpu availability
-                        textArea.append("虚拟机的cpu usage:"+ getDomainCPU(domain) + "%\n");
+                        rowData[i] = new Object[5];
+                        rowData[i][0]= domain.getID();
+                        rowData[i][1]= domain.getName();
+                        rowData[i][2]= domain.getInfo().state;
+                        rowData[i][3]= getDomainMem(domain.getID())+"%";
+                        rowData[i][4]= getDomainCPU(domain)+"%";
+                        i++;
                     }
+            		TableModel tableModel = new DefaultTableModel(rowData, columnNames);
+            		table = new JTable(tableModel);
+                    JScrollPane scrollPane = new JScrollPane(table);
+                    scrollPane.setBounds(10, 270, 600, 400);
+                    panel.add(scrollPane);
             	} catch (LibvirtException er) {
             		System.out.println("exception caught:"+er);
             		System.out.println(er.getError());
